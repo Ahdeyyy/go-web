@@ -8,6 +8,7 @@ import (
 
 	"github.com/Ahdeyyy/go-web/internal/config"
 	"github.com/Ahdeyyy/go-web/internal/handlers"
+	"github.com/Ahdeyyy/go-web/internal/render"
 	"github.com/Ahdeyyy/go-web/internal/routes"
 )
 
@@ -43,9 +44,21 @@ func main() {
 }
 
 func init() {
+	// change this to false when in production
+	appConfig.Debug = true
+
+	// declare the error
+	var err error
+
 	// set the configuration
 	appConfig.Port = portNumber
+	appConfig.TemplateCache, err = render.CreateTemplateCache()
+	if err != nil {
+		log.Fatal("couldn't create template cache", err)
+	}
 
 	// initialize the handlers
 	handlers.Init(handlers.NewDependency(&appConfig))
+	render.NewTemplates(&appConfig)
+
 }

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/Ahdeyyy/go-web/internal/config"
+	"github.com/Ahdeyyy/go-web/internal/render"
 )
 
 var Dep *Dependency
@@ -28,6 +29,7 @@ func Init(d *Dependency) {
 
 // Home is the home handler
 func (d *Dependency) Home(w http.ResponseWriter, r *http.Request) {
-	// send the data to the template
-	w.Write([]byte("Hello World"))
+
+	// Get the template from the cache
+	render.RenderTemplate(w, r, "home.tmpl")
 }
