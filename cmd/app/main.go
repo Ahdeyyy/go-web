@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -13,19 +14,30 @@ import (
 	"github.com/Ahdeyyy/go-web/internal/handlers"
 	"github.com/Ahdeyyy/go-web/internal/render"
 	"github.com/Ahdeyyy/go-web/internal/routes"
+	"github.com/gorilla/sessions"
 )
 
 // config is the configuration for the application
 var appConfig config.Config
+var sessionStore *sessions.CookieStore
+var session *sessions.Session
+var infoLog *log.Logger
+var errorLog *log.Logger
+var reader io.Reader
 
+// wait is the time to wait before shutting down
+var wait time.Duration
+
+// portNumber is the port number the server will listen on
 const portNumber = ":8080"
 
 // main is the entry point for the application
 func main() {
 
-	var wait time.Duration
-	flag.DurationVar(&wait, "graceful-timeout", time.Second*15, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
-	flag.Parse()
+	// run the application
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
 
 	// create a new server mux and register the routes
 	srv := &http.Server{
@@ -67,23 +79,62 @@ func main() {
 
 }
 
-func init() {
+func run() error {
+
+	// read flags
+	flag.DurationVar(&wait, "graceful-timeout", time.Second*15, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
+	debug := flag.Bool("debug", true, "Application is in production")
+	useCache := flag.Bool("cache", true, "Use template cache")
+	// dbHost := flag.String("dbhost", "localhost", "Database host")
+	// dbName := flag.String("dbname", "", "Database name")
+	// dbUser := flag.String("dbuser", "", "Database user")
+	// dbPass := flag.String("dbpass", "", "Database password")
+	// dbPort := flag.String("dbport", "5432", "Database port")
+	// dbSSL := flag.String("dbssl", "disable", "Database ssl settings (disable, prefer, require)")
+
+	flag.Parse()
 
 	// change this to false when in production
-	appConfig.Debug = true
+	appConfig.Debug = *debug
+	appConfig.UseCache = *useCache
+
+	infoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+	appConfig.InfoLog = infoLog
+
+	errorLog = log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+	appConfig.ErrorLog = errorLog
 
 	// declare the error
 	var err error
+
+	// session
+
+	key := make([]byte, 32)
+	_, err = reader.Read(key)
+	if err != nil {
+		return err
+	}
+
+	os.Setenv("SESSION_KEY", string(key))
+	sessionStore = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
+	session = sessions.NewSession(sessionStore, "app-session")
+
+	// TODO set session options
 
 	// set the configuration
 	appConfig.Port = portNumber
 	appConfig.TemplateCache, err = render.CreateTemplateCache()
 	if err != nil {
-		log.Fatal("couldn't create template cache", err)
+		return err
 	}
+	appConfig.SessionStore = sessionStore
+	appConfig.Session = session
 
 	// initialize the handlers
 	handlers.Init(handlers.NewDependency(&appConfig))
 	render.NewTemplates(&appConfig)
 
+	log.Printf("Server configs: %+v , shutdown timeout: %v", appConfig, wait)
+
+	return nil
 }

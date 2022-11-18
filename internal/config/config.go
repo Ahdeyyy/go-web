@@ -1,15 +1,20 @@
 package config
 
-import "html/template"
+import (
+	"html/template"
+	"log"
+
+	"github.com/gorilla/sessions"
+)
 
 // Config is the configuration for the application
 type Config struct {
-
-	// Port is the port the application will listen on
-	Port string
-	// Debug is whether the application is in debug mode
-	Debug bool
-
-	// TemplateCache is the template cache
-	TemplateCache map[string]*template.Template
+	Port          string                        // Port to listen on
+	Debug         bool                          // Debug mode
+	UseCache      bool                          // Use cache
+	InfoLog       *log.Logger                   // Info log
+	ErrorLog      *log.Logger                   // Error log
+	SessionStore  *sessions.CookieStore         // SessionStore
+	Session       *sessions.Session             // Session
+	TemplateCache map[string]*template.Template // Template cache
 }

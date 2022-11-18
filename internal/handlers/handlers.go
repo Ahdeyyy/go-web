@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/Ahdeyyy/go-web/internal/config"
@@ -29,6 +30,21 @@ func Init(d *Dependency) {
 
 // Home is the home handler
 func (d *Dependency) Home(w http.ResponseWriter, r *http.Request) {
+
+	session, err := d.App.SessionStore.Get(r, "app-session")
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	session.Values["test"] = "t"
+
+	err = session.Save(r, w)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	// Get the template from the cache
 	render.RenderTemplate(w, r, "home.tmpl")
