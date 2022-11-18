@@ -10,6 +10,7 @@ import (
 
 	"github.com/Ahdeyyy/go-web/internal/config"
 	"github.com/Ahdeyyy/go-web/internal/models"
+	"github.com/gorilla/csrf"
 )
 
 var functions = template.FuncMap{}
@@ -41,6 +42,9 @@ func AddDefaultContext(td *models.TemplateContext, r *http.Request) *models.Temp
 	if session.Values["user_id"] != nil {
 		td.IsAuthenticated = 1
 	}
+
+	td.CSRFToken = csrf.Token(r)
+	td.CSRFTemplateTag = csrf.TemplateField(r)
 
 	return td
 }
