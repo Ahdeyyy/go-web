@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/Ahdeyyy/go-web/internal/config"
+	"github.com/Ahdeyyy/go-web/internal/models"
 )
 
 var functions = template.FuncMap{}
@@ -22,8 +23,30 @@ func NewTemplates(a *config.Config) {
 	appConfig = a
 }
 
+func AddDefaultContext(td *models.TemplateContext, r *http.Request) *models.TemplateContext {
+
+	session := appConfig.Session
+
+	if flash := session.Flashes("flash"); len(flash) > 0 {
+		td.Flash = flash[0].(string)
+	}
+	if Error := session.Flashes("error"); len(Error) > 0 {
+		td.Error = Error[0].(string)
+	}
+
+	if Warning := session.Flashes("warning"); len(Warning) > 0 {
+		td.Warning = Warning[0].(string)
+	}
+
+	if session.Values["user_id"] != nil {
+		td.IsAuthenticated = 1
+	}
+
+	return td
+}
+
 // RenderTemplate renders template
-func RenderTemplate(w http.ResponseWriter, r *http.Request, tmpl string) {
+func RenderTemplate(w http.ResponseWriter, r *http.Request, tmpl string, tContext *models.TemplateContext) {
 
 	var tc map[string]*template.Template
 
@@ -40,11 +63,14 @@ func RenderTemplate(w http.ResponseWriter, r *http.Request, tmpl string) {
 	}
 
 	buf := new(bytes.Buffer)
+	tContext = AddDefaultContext(tContext, r)
+	appConfig.Session.Save(r, w)
 
-	err := t.Execute(buf, nil)
+	err := t.Execute(buf, tContext)
 
 	if err != nil {
 		log.Println(err)
+		return
 	}
 
 	_, err = buf.WriteTo(w)
