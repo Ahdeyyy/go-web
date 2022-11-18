@@ -11,7 +11,6 @@ import (
 type Config struct {
 	Port          string                        // Port to listen on
 	Debug         bool                          // Debug mode
-	UseCache      bool                          // Use cache
 	InfoLog       *log.Logger                   // Info log
 	ErrorLog      *log.Logger                   // Error log
 	SessionStore  *sessions.CookieStore         // SessionStore

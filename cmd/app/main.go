@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"flag"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -24,10 +23,11 @@ var sessionStore *sessions.CookieStore
 var session *sessions.Session
 var infoLog *log.Logger
 var errorLog *log.Logger
-var reader io.Reader
 
 // wait is the time to wait before shutting down
 var wait time.Duration
+
+var debug bool
 
 // portNumber is the port number the server will listen on
 const portNumber = ":8080"
@@ -83,9 +83,8 @@ func main() {
 func run() error {
 
 	// read flags
-	flag.DurationVar(&wait, "graceful-timeout", time.Second*15, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
-	// debug := flag.Bool("debug", true, "Application is in production")
-	// useCache := flag.Bool("cache", true, "Use template cache")
+	flag.DurationVar(&wait, "timeout", time.Second*15, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
+	flag.BoolVar(&debug, "debug", false, "enable debug mode")
 	// dbHost := flag.String("dbhost", "localhost", "Database host")
 	// dbName := flag.String("dbname", "", "Database name")
 	// dbUser := flag.String("dbuser", "", "Database user")
@@ -96,8 +95,12 @@ func run() error {
 	flag.Parse()
 
 	// change this to false when in production
-	appConfig.Debug = true
-	appConfig.UseCache = true
+
+	if debug {
+		appConfig.Debug = true
+	}
+
+	log.Println("debug mode is ", debug)
 
 	infoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	appConfig.InfoLog = infoLog
