@@ -18,6 +18,7 @@ func Routes(app *config.Config) http.Handler {
 
 	// set the routes
 	mux.HandleFunc("/", handlers.Dep.Home)
+	mux.HandleFunc("/user", handlers.Dep.User)
 
 	return csrf.Protect([]byte("32-byte-long-auth-key"), csrf.Secure(false), csrf.SameSite(csrf.SameSiteLaxMode))(mux)
 

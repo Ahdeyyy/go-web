@@ -34,18 +34,12 @@ func (m *sqliteDBinterface) CreateUser(u models.User) (int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	exists, e := m.GetUserByEmail(u.Email)
-	if e != nil {
-		return -1, e
-	}
+	exists, _ := m.GetUserByEmail(u.Email)
 	if exists.ID != 0 {
 		return -1, errors.New("user already exists")
 	}
 
-	exists, e = m.GetUserByUsername(u.Username)
-	if e != nil {
-		return -1, e
-	}
+	exists, _ = m.GetUserByUsername(u.Username)
 	if exists.ID != 0 {
 		return -1, errors.New("user already exists")
 	}

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Ahdeyyy/go-web/internal/config"
+	"github.com/Ahdeyyy/go-web/internal/driver"
 	"github.com/Ahdeyyy/go-web/internal/handlers"
 	"github.com/Ahdeyyy/go-web/internal/render"
 	"github.com/Ahdeyyy/go-web/internal/routes"
@@ -23,6 +24,7 @@ var sessionStore *sessions.CookieStore
 var session *sessions.Session
 var infoLog *log.Logger
 var errorLog *log.Logger
+var db *driver.DB
 
 // wait is the time to wait before shutting down
 var wait time.Duration
@@ -66,6 +68,8 @@ func main() {
 	// Block until we receive our signal.
 	<-c
 
+	defer db.SQL.Close()
+
 	// Create a deadline to wait for.
 	ctx, cancel := context.WithTimeout(context.Background(), wait)
 	defer cancel()
@@ -85,6 +89,7 @@ func run() error {
 	// read flags
 	flag.DurationVar(&wait, "timeout", time.Second*15, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
 	flag.BoolVar(&debug, "debug", false, "enable debug mode")
+
 	// dbHost := flag.String("dbhost", "localhost", "Database host")
 	// dbName := flag.String("dbname", "", "Database name")
 	// dbUser := flag.String("dbuser", "", "Database user")
@@ -136,7 +141,9 @@ func run() error {
 	appConfig.Session = session
 
 	// initialize the handlers
-	handlers.Init(handlers.NewDependency(&appConfig))
+	dbPath := "example.sqlite3"
+	db, _ = driver.ConnectSqlite(dbPath)
+	handlers.Init(handlers.NewDependency(&appConfig, db))
 	render.NewTemplates(&appConfig)
 
 	log.Printf("Server configs: %+v , shutdown timeout: %v", appConfig, wait)

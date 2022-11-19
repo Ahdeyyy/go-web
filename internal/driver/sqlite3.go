@@ -2,6 +2,7 @@ package driver
 
 import (
 	"database/sql"
+	"os"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -21,9 +22,18 @@ const maxDbLifetime = 5 * time.Minute
 
 // ConnectSqlite connects to the sqlite database
 func ConnectSqlite(dsn string) (*DB, error) {
-	db, err := NewSqliteDB(databasePath + dsn)
-	if err != nil {
-		panic(err)
+	var db *sql.DB
+	var err error
+	if _, err := os.Stat(databasePath + dsn); os.IsNotExist(err) {
+		db, err = NewSqliteDB(databasePath + dsn)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		db, err = sql.Open("sqlite3", databasePath+dsn)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	db.SetMaxOpenConns(maxOpenDbConn)
@@ -60,6 +70,8 @@ func NewSqliteDB(dsn string) (*sql.DB, error) {
 	db.Exec("PRAGMA foreign_keys = ON")
 	db.Exec("PRAGMA journal_mode = WAL")
 	db.Exec("PRAGMA busy_timeout = 5000")
+
+	db.Exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, firstname TEXT, lastname TEXT, email TEXT, password TEXT, created_at DATETIME, updated_at DATETIME)")
 
 	return db, nil
 }
